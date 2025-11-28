@@ -214,8 +214,8 @@ func (s *ContextHandlerSuite) TestHandle_WithAppendAttrFromContext() {
 		},
 	})
 
-	ctx := context.WithValue(context.Background(), "test", "value")
 	logger := slog.New(handler)
+	ctx := context.WithValue(context.Background(), "request_id", "12345")
 	logger.Log(ctx, slog.LevelInfo, "test message")
 
 	var jsonData map[string]interface{}
@@ -237,7 +237,7 @@ func (s *ContextHandlerSuite) TestHandle_AppendAttrFromContextError() {
 		},
 	})
 
-	ctx := context.WithValue(context.Background(), "test", "value")
+	ctx := context.WithValue(context.Background(), "request_id", "12345")
 	record := slog.NewRecord(time.Now(), slog.LevelInfo, "test message", 0)
 	err := handler.Handle(ctx, record)
 
@@ -321,12 +321,16 @@ func (s *ContextHandlerSuite) TestHandle_AllFeatures() {
 			slog.String("service", "test"),
 		},
 		AppendAttrFromContext: func(ctx context.Context) ([]slog.Attr, error) {
-			return []slog.Attr{slog.String("request_id", "req-123")}, nil
+			requestID, ok := ctx.Value("request_id").(string)
+			if !ok {
+				return nil, errors.New("request_id not found in context")
+			}
+			return []slog.Attr{slog.String("request_id", requestID)}, nil
 		},
 	})
 
-	ctx := context.WithValue(context.Background(), "test", "value")
 	logger := slog.New(handler)
+	ctx := context.WithValue(context.Background(), "request_id", "req-123")
 	logger.LogAttrs(ctx, slog.LevelInfo, "test message", slog.String("key", "value"))
 
 	var jsonData map[string]interface{}
