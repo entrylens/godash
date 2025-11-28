@@ -91,6 +91,43 @@ err = jsonkit.ProtoJSONResponse(w, http.StatusOK, message)
 
 [📖 Full Documentation](./jsonkit/README.md)
 
+### [slogkit](./slogkit/) - Structured Logging Utilities
+
+Context-aware structured logging extensions for Go's `log/slog` package.
+
+```go
+import (
+	"context"
+	"log/slog"
+	"github.com/entrylens/godash/slogkit"
+)
+
+handler := slogkit.NewContextHandler(slogkit.ContextHandlerOptions{
+	UseJson:   true,
+	Level:     slog.LevelInfo,
+	AddSource: true,
+	AppendAttrFromContext: func(ctx context.Context) ([]slog.Attr, error) {
+		if requestID, ok := ctx.Value("request_id").(string); ok {
+			return []slog.Attr{slog.String("request_id", requestID)}, nil
+		}
+		return nil, nil
+	},
+})
+
+logger := slog.New(handler)
+ctx := context.WithValue(context.Background(), "request_id", "req-123")
+logger.InfoContext(ctx, "Processing request")
+```
+
+**Key Features:**
+
+- Context-aware attribute extraction
+- JSON and text output formats
+- Source file tracking
+- Process ID logging
+
+[📖 Full Documentation](./slogkit/README.md)
+
 ## 📋 Requirements
 
 - Go 1.23 or higher
@@ -109,6 +146,7 @@ Or test specific packages:
 ```bash
 go test ./sliceskit/...
 go test ./jsonkit/...
+go test ./slogkit/...
 ```
 
 ## 🔧 Development
@@ -176,4 +214,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Made with ❤️ for the Go community**
+Made with ❤️ for the Go community
