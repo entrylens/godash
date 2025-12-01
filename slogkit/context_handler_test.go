@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/entrylens/godash/slogkit"
 	"github.com/stretchr/testify/suite"
@@ -235,16 +234,21 @@ func (s *ContextHandlerSuite) TestHandle_AppendAttrFromContextError() {
 		Writer:  s.buf,
 		Level:   slog.LevelInfo,
 		AppendAttrFromContext: func(ctx context.Context) ([]slog.Attr, error) {
-			return nil, testErr
+			return []slog.Attr{
+				slog.String("request_id", "12345"),
+				slog.String("user_id", "user-1"),
+			}, testErr
 		},
 	})
 
+	logger := slog.New(handler)
 	ctx := context.WithValue(context.Background(), reqIdCtxKey{}, "12345")
-	record := slog.NewRecord(time.Now(), slog.LevelInfo, "test message", 0)
-	err := handler.Handle(ctx, record)
+	logger.Log(ctx, slog.LevelInfo, "test message")
 
-	s.Error(err)
-	s.Equal(testErr, err)
+	var jsonData map[string]interface{}
+	err := json.Unmarshal(s.buf.Bytes(), &jsonData)
+	s.NoError(err)
+	s.NotContains(jsonData, "request_id")
 }
 
 // WithAttrs should preserve ContextHandler wrapper and add static attributes
@@ -340,6 +344,28 @@ func (s *ContextHandlerSuite) TestHandle_AllFeatures() {
 	s.Equal("req-123", jsonData["request_id"])
 	s.Equal("test message", jsonData["msg"])
 	s.Equal("value", jsonData["key"])
+}
+
+func (s *ContextHandlerSuite) TestHandle_WithAttrs() {
+	handler := slogkit.NewContextHandler(slogkit.ContextHandlerOptions{
+		UseJson:   true,
+		Writer:    s.buf,
+		AddSource: true,
+		Level:     slog.LevelInfo,
+		ExtraAttrs: []slog.Attr{
+			slog.String("service", "test"),
+		},
+	})
+
+	logger := slog.New(handler).With(slog.String("static", "attr"))
+	logger.Info("test message")
+
+	var jsonData map[string]interface{}
+	err := json.Unmarshal(s.buf.Bytes(), &jsonData)
+	s.NoError(err)
+	s.Contains(jsonData, "static")
+	s.Contains(jsonData, "service")
+	s.Contains(jsonData, "source")
 }
 
 func TestContextHandlerSuite(t *testing.T) {
