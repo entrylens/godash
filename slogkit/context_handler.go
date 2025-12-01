@@ -102,11 +102,11 @@ func (h ContextHandler) Handle(ctx context.Context, r slog.Record) error {
 	if h.AppendAttrFromContext != nil {
 		attrs, err := h.AppendAttrFromContext(ctx)
 		if err != nil {
-			slog.Error("failed to append attributes from context", "error", err)
-			return err
+			slog.Error("failed to append attributes from context", slog.String("error", err.Error()))
+		} else {
+			r.AddAttrs(attrs...)
 		}
 
-		r.AddAttrs(attrs...)
 	}
 
 	return h.Handler.Handle(ctx, r)
@@ -115,11 +115,23 @@ func (h ContextHandler) Handle(ctx context.Context, r slog.Record) error {
 // WithAttrs returns a new handler with the given attributes added to all records.
 // This ensures the ContextHandler wrapper is preserved when .With() is called on the logger.
 func (h ContextHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return ContextHandler{Handler: h.Handler.WithAttrs(attrs)}
+	return ContextHandler{
+		Handler:               h.Handler.WithAttrs(attrs),
+		AddSource:             h.AddSource,
+		SourceKey:             h.SourceKey,
+		CallerSkip:            h.CallerSkip,
+		AppendAttrFromContext: h.AppendAttrFromContext,
+	}
 }
 
 // WithGroup returns a new handler that starts a group with the given name.
 // This ensures the ContextHandler wrapper is preserved when grouping is used.
 func (h ContextHandler) WithGroup(name string) slog.Handler {
-	return ContextHandler{Handler: h.Handler.WithGroup(name)}
+	return ContextHandler{
+		Handler:               h.Handler.WithGroup(name),
+		AddSource:             h.AddSource,
+		SourceKey:             h.SourceKey,
+		CallerSkip:            h.CallerSkip,
+		AppendAttrFromContext: h.AppendAttrFromContext,
+	}
 }
