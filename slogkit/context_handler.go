@@ -30,7 +30,7 @@ type ContextHandler struct {
 	AppendAttrFromContext func(ctx context.Context) ([]slog.Attr, error)
 }
 
-func NewContextHandler(options ContextHandlerOptions) slog.Handler {
+func NewContextHandler(options ContextHandlerOptions) *ContextHandler {
 
 	slogOpts := slog.HandlerOptions{
 		Level: options.Level,
