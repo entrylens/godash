@@ -7,3 +7,5 @@ commit-msg:
   commands:
     commitlint:
       run: pnpm --dir scripts/commitlint exec commitlint --edit {1}
+    format:
+      run: make fmt
